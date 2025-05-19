@@ -19,8 +19,17 @@ async def consume():
         bootstrap_servers=[KAFKA_SERVER],
         value_serializer=lambda m: json.dumps(m).encode('utf-8'),
     )
-    await consumer.start()
-    await producer.start()
+    retries = 0
+    connected = False
+    while not connected and retries < 10:
+        try:
+            await consumer.start()
+            await producer.start()
+            connected = True
+        except Exception:
+            await asyncio.sleep(1)
+            retries += 1
+
     while True:
         async for message in consumer:
             print(f"Received: {message.value}")
